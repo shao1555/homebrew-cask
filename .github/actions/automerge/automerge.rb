@@ -128,12 +128,16 @@ def passed_ci?(check_runs = [])
               .map { |(k, v)| [k, v.max_by { |status| Time.parse(status.fetch("completed_at")) }] }
   ]
 
+  puts "PASSED_CI BEGIN"
+  puts JSON.pretty_generate(check_runs.keys)
+  puts "PASSED_CI END"
+
   check_runs.dig("ci", "conclusion") == "success"
 end
 
 begin
   case ENV["GITHUB_EVENT_NAME"]
-  when "schedule"
+  when "push", "schedule"
     prs = GitHub.pull_requests(ENV["GITHUB_REPOSITORY"], state: :open, base: "master")
 
     skip "No open pull requests found." if prs.empty?
@@ -168,7 +172,7 @@ begin
       exit 1
     end
   else
-    skip "Unsupported GitHub Actions event."
+    raise "Unsupported GitHub Actions event: #{ENV["GITHUB_EVENT_NAME"].inspect}"
   end
 rescue NeutralSystemExit => e
   puts e.message
